@@ -15,4 +15,5 @@ Write an Ansible script that will deploy the Spring Petclinic application on vir
 Install Spring Petclinic cloud version in Azure using AKS Azure Kubernetes Service.
 
 * [Frontend repository](https://github.com/spring-petclinic/spring-petclinic-angular)  
-* [Backend repository](https://github.com/spring-petclinic/spring-petclinic-rest) -[Spring Petclinic Cloud version repository](https://github.com/spring-petclinic/spring-petclinic-cloud)
+* [Backend repository](https://github.com/spring-petclinic/spring-petclinic-rest)
+* [Spring Petclinic Cloud version repository](https://github.com/spring-petclinic/spring-petclinic-cloud)
