@@ -1,0 +1,60 @@
+{
+    "env": [
+        "PUBLIC_IP",
+        "FRONTEND_PORT",
+        "BACKEND_IP",
+        "BACKEND_PORT"
+    ],
+    "commands": [
+        {
+            "message": "Running pre-configuration of VM",
+            "command": "sudo sed -i 's/#$nrconf{restart} = '\"'\"'i'\"'\"';/$nrconf{restart} = '\"'\"'a'\"'\"';/g' /etc/needrestart/needrestart.conf"
+        },
+        {
+            "message": "Updating packages",
+            "command": "sudo apt-get update -y && sudo apt-get upgrade -y"
+        },
+        {
+            "message": "Installing curl and nginx",
+            "command": "sudo apt-get install curl -y && sudo apt-get install nginx -y"
+        },
+        {
+            "message": "Installing NodeJS",
+            "script": "install_node.sh"
+        },
+        {
+            "message": "Cloning frontend repository",
+            "command": "cd ~ && git clone https://github.com/spring-petclinic/spring-petclinic-angular.git"
+        },
+        {
+            "message": "Installing Angular CLI",
+            "command": "sudo npm install -g @angular/cli@latest"
+        },
+        {
+            "message": "Installing app dependencies",
+            "command": "cd ~/spring-petclinic-angular && npm install"
+        },
+        {
+            "message": "Building project",
+            "script": "build_project.sh",
+            "params": [
+                "PUBLIC_IP",
+                "FRONTEND_PORT"
+            ]
+        },
+        {
+            "message": "Configuring nginx",
+            "script": "configure_nginx.sh",
+            "params": [
+                "FRONTEND_PORT",
+                "BACKEND_IP",
+                "BACKEND_PORT"
+            ]
+        },
+        {
+            "message": "Starting web server",
+            "command": "sudo nginx -s reload"
+        }
+    ]
+}
+

@@ -1,0 +1,77 @@
+- name: Create Azure enviroment
+  hosts: localhost
+  connection: local
+  vars:
+
+
+
+  tasks:
+  - name: create key
+    openssh_keypair:
+        path: "~/.ssh/{{ssh_key_filename}}"
+        type: rsa
+        size: 4096
+        state: present
+        force: no
+  - name: Create resource group
+    azure_rm_resourcegroup:
+      name: "{{ group_name }}"
+      location: "{{ region }}"
+  - name: Create virtual network
+    azure_rm_virtualnetwork:
+      resource_group: "{{ group_name }}"
+      name: "{{network_name}}"
+      address_prefixes: "{{prefix}}"
+  - name: Add subnets
+    azure_rm_subnet:
+      resource_group: "{{group_name}}"
+      name: "{{item.name}}"
+      address_prefix:  "{{item.prefix}}"
+      virtual_network: "{{network_name}}"
+    loop: "{{subnets}}"
+  - name: Create public IP addresses
+    azure_rm_publicipaddress:
+      resource_group: "{{ group_name }}"
+      allocation_method: Static
+      name: "{{item.pub_ip}}"
+    loop: "{{vms}}"
+    #register: output_ip_address
+  - name: Create Network Security Groups
+    azure_rm_securitygroup:
+      resource_group: "{{ group_name }}"
+      name: "{{item.name}}"
+      rules: "{{item.rules}}"
+    loop: "{{nsgs}}"
+  - name: Create virtual network interface cards
+    azure_rm_networkinterface:
+      resource_group: "{{ group_name }}"
+      name: "{{item.nic_name}}"
+      virtual_network_name: "{{network_name}}"
+      subnet_name: "{{item.subnet}}"
+      ip_configurations:
+      - name: ipconfig1
+        private_ip_allocation_method: Static
+        private_ip_address: "{{item.private_ip}}"
+        public_ip_address_name: "{{item.pub_ip}}"
+      security_group_name: "{{item.nsg}}"
+    loop: "{{vms}}"
+  - name: Create VMs
+    azure_rm_virtualmachine:
+      resource_group: "{{ group_name }}"
+      name: "{{item.vm.name}}"
+      vm_size: Standard_DS1_v2
+      admin_username: azureuser
+      ssh_password_enabled: false
+      ssh_public_keys:
+        - path: /home/azureuser/.ssh/authorized_keys
+          key_data: "{{lookup('ansible.builtin.file', '~/.ssh/{{ssh_key_filename}}.pub')}}"
+      network_interfaces: "{{item.nic_name}}"
+      image:
+        offer: 0001-com-ubuntu-server-jammy
+        publisher: Canonical
+        sku: '22_04-lts'
+        version: latest
+      tags:
+        roles: "{{item.vm.roles}}"
+    loop: "{{vms}}"
+

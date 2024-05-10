@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  database_master:
+    build: 
+      context: ../roles/database_master/files
+      args:
+        DATABASE_MASTER_PORT: 3306
+        DATABASE_USER: pc
+        DATABASE_PASSWORD: pc
+        SLAVE_USER_PASSWORD: slave
+  database_slave:
+    build: 
+      context: ../roles/database_slave/files
+      args:
+        DATABASE_SLAVE_PORT: 3306
+        DATABASE_USER: pc
+        DATABASE_PASSWORD: pc
+        DATABASE_MASTER_IP: database_master
+        DATABASE_MASTER_PORT: 3306
+        SLAVE_USER_PASSWORD: slave
+    depends_on:
+      - database_master
+  read_backend:
+    build: 
+      context: ../roles/backend/files
+      args:
+        BACKEND_PORT: 8080
+        DATABASE_IP: database_slave
+        DATABASE_PORT: 3306
+        DATABASE_USER: pc
+        DATABASE_PASSWORD: pc
+    depends_on:
+      - database_slave
+  write_backend:
+    build: 
+      context: ../roles/backend/files
+      args:
+        BACKEND_PORT: 8080
+        DATABASE_IP: database_master
+        DATABASE_PORT: 3306
+        DATABASE_USER: pc
+        DATABASE_PASSWORD: pc
+    depends_on:
+      - database_master
+  load_balancer:
+    build:
+      context: ../roles/load_balancer/files
+      args:
+        LOAD_BALANCER_PORT: 8080
+        READ_BACKEND_IP: read_backend
+        READ_BACKEND_PORT: 8080
+        WRITE_BACKEND_IP: write_backend
+        WRITE_BACKEND_PORT: 8080
+    depends_on:
+      - read_backend
+      - write_backend
+  frontend:
+    build:
+      context: ../roles/frontend/files
+      args:
+        PUBLIC_IP: localhost
+        FRONTEND_PORT: 8080
+        BACKEND_IP: load_balancer
+        BACKEND_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - load_balancer

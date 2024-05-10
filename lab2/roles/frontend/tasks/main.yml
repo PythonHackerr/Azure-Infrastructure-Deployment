@@ -1,0 +1,25 @@
+- name: Register env variable
+  ansible.builtin.set_fact:
+    env: "{{item.env.fe}}"
+  loop: "{{vms}}"
+  when: "private_ipv4_addresses[0] == item.private_ip"
+- name: Ensures frontend dir exists
+  file: path=/frontend/ state=directory
+- name: Copy Frontend Dockerfile
+  ansible.builtin.copy:
+    src: "."
+    dest: /frontend/
+- name: Build Frontend image
+  community.docker.docker_image:
+    name: petclinic-frontend
+    source: build
+    build:
+      path: /frontend
+      args: "{{env}}"
+- name: Run Frontend image
+  community.docker.docker_container:
+    api_version: "1.43"
+    name: petclinic-frontend
+    image: petclinic-frontend
+    ports: "{{env.FRONTEND_PORT}}:{{env.FRONTEND_PORT}}"
+    network_mode: host

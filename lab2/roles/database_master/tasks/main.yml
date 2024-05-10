@@ -1,0 +1,24 @@
+- name: Register env variable
+  ansible.builtin.set_fact:
+    env: "{{item.env.dbm}}"
+  loop: "{{vms}}"
+  when: "private_ipv4_addresses[0] == item.private_ip"
+- name: Ensures database_master dir exists
+  file: path=/database_master/ state=directory
+- name: Copy Backend Dockerfile
+  ansible.builtin.copy:
+    src: "."
+    dest: /database_master/
+- name: Build backend replication image
+  community.docker.docker_image:
+    name: petclinic-database-master
+    source: build
+    build:
+      path: /database_master/
+      args: "{{env}}"
+- name: Deploy backend container
+  community.docker.docker_container:
+    name: petclinic-database-master
+    image: petclinic-database-master
+    ports: "{{env.DATABASE_MASTER_PORT}}:{{env.DATABASE_MASTER_PORT}}"
+    network_mode: host

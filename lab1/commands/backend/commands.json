@@ -1,0 +1,46 @@
+{
+    "env": [
+        "BACKEND_PORT",
+        "DATABASE_IP",
+        "DATABASE_PORT",
+        "DATABASE_USER",
+        "DATABASE_PASSWORD"
+    ],
+    "commands": [
+        {
+            "message": "Running pre-configuration of VM",
+            "command": "sudo sed -i 's/#$nrconf{restart} = '\"'\"'i'\"'\"';/$nrconf{restart} = '\"'\"'a'\"'\"';/g' /etc/needrestart/needrestart.conf"
+        },
+        {
+            "message": "Updating packages",
+            "command": "sudo apt-get update -y && sudo apt-get upgrade -y"
+        },
+        {
+            "message": "Installing Java 17 (OpenJDK)",
+            "command": "sudo apt-get install -y openjdk-17-jdk"
+        },
+        {
+            "message": "Cloning backend repository",
+            "command": "cd ~ && git clone https://github.com/spring-petclinic/spring-petclinic-rest.git"
+        },
+        {
+            "message": "Changing backend config",
+            "script": "backend_config.sh",
+            "params": [
+                "BACKEND_PORT",
+                "DATABASE_IP",
+                "DATABASE_PORT",
+                "DATABASE_USER",
+                "DATABASE_PASSWORD"
+            ]
+        },
+        {
+            "message": "Configuring backend service",
+            "script": "configure_service.sh"
+        },
+        {
+            "message": "Building and running backend server",
+            "command": "sudo systemctl start backend"
+        }
+    ]
+}

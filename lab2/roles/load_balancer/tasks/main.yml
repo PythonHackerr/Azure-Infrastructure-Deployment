@@ -1,0 +1,25 @@
+- name: Register env variable
+  ansible.builtin.set_fact:
+    env: "{{item.env.lb}}"
+  loop: "{{vms}}"
+  when: "private_ipv4_addresses[0] in item.private_ip"
+- name: Ensures frontend dir exists
+  file: path=/load_balancer/ state=directory
+- name: Copy Frontend Dockerfile
+  ansible.builtin.copy:
+    src: "."
+    dest: /load_balancer//
+- name: Build Frontend image
+  community.docker.docker_image:
+    name: petclinic-load-balancer
+    source: build
+    build:
+      path: /load_balancer/
+      args: "{{env}}"
+- name: Run Frontend image
+  community.docker.docker_container:
+    api_version: "1.43"
+    name: petclinic-load-balancer
+    image: petclinic-load-balancer
+    ports: "{{env.LOAD_BALANCER_PORT}}:{{env.LOAD_BALANCER_PORT}}"
+    network_mode: host

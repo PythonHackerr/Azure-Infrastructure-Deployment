@@ -1,0 +1,194 @@
+{
+  "location": "switzerlandnorth",
+  "group_name": "lab1",
+  "network": {
+    "name": "VNet",
+    "prefix": "10.0.0.0/16",
+    "subnets":
+    [
+      {
+        "name" : "frontend",
+        "nsg" : "frontend_nsg",
+        "prefix" : "10.0.0.0/24"
+      },
+      {
+        "name" : "backend",
+        "nsg" : "backend_nsg",
+        "prefix" : "10.0.1.0/24"
+      },
+      {
+        "name" : "database",
+        "nsg" : "db_nsg",
+        "prefix" : "10.0.2.0/24"
+      }
+    ]
+  },
+  "nsgs": [ 
+    {
+      "name": "frontend_nsg",
+      "rules": 
+      [
+        {
+          "name" : "frontend_http",
+          "priority" : 1000,
+          "direction" : "Inbound",
+          "source_address_prefixes" : "*",
+          "source_port_ranges" : "*",
+          "destination_address_prefixes" : "*",
+          "destination_port_ranges" : 80
+        },
+        {
+          "name" : "ssh",
+          "priority" : 1001,
+          "direction" : "Inbound",
+          "source_address_prefixes" : "*",
+          "source_port_ranges" : "*",
+          "destination_address_prefixes" : "*",
+          "destination_port_ranges" : 22
+        }
+      ]
+    },
+    {
+      "name": "backend_nsg",
+      "rules": 
+      [
+        {
+          "name" : "backend_http",
+          "priority" : 1000,
+          "direction" : "Inbound",
+          "source_address_prefixes" : "*",
+          "source_port_ranges" : "*",
+          "destination_address_prefixes" : "*",
+          "destination_port_ranges" : 8080
+        },
+        {
+          "name" : "ssh",
+          "priority" : 1001,
+          "direction" : "Inbound",
+          "source_address_prefixes" : "*",
+          "source_port_ranges" : "*",
+          "destination_address_prefixes" : "*",
+          "destination_port_ranges" : 22
+        }
+      ]
+    },
+    {
+      "name": "db_nsg",
+      "rules": 
+      [
+        {
+          "name" : "db_mysql",
+          "direction" : "Inbound",
+          "priority" : 1000,
+          "source_address_prefixes" : "*",
+          "source_port_ranges" : "*",
+          "destination_address_prefixes" : "*",
+          "destination_port_ranges" : 3306
+        },
+        {
+          "name" : "ssh",
+          "priority" : 1001,
+          "direction" : "Inbound",
+          "source_address_prefixes" : "*",
+          "source_port_ranges" : "*",
+          "destination_address_prefixes" : "*",
+          "destination_port_ranges" : 22
+        }
+      ]
+    }
+  ],
+
+  "public_ips": [
+    {
+      "name" : "frontend_ip"
+    },
+    {
+      "name" : "temp_ip"
+    }
+  ],
+
+  "VM": [
+    {
+      "name" : "database_master",
+      "subnet" : "database",
+      "private_ip" : "10.0.2.11",
+      "public_ip" : "temp_ip",
+      "services" : [
+        {
+          "name" : "database_master",
+          "env" : 
+          {
+            "DATABASE_MASTER_IP" : "10.0.2.11",
+            "DATABASE_MASTER_PORT" : 3306,
+            "DATABASE_USER" : "pc",
+            "DATABASE_PASSWORD" : "pc",
+            "DATABASE_SLAVE_IP" : "10.0.2.12",
+            "SLAVE_USER_PASSWORD" : "s_password"
+          }
+        }
+      ]
+  },
+  {
+    "name" : "database_slave",
+    "subnet" : "database",
+    "private_ip" : "10.0.2.12",
+    "public_ip" : "temp_ip",
+    "services" : [
+      {
+        "name" : "database_slave",
+        "env" : 
+        {
+          "DATABASE_SLAVE_IP" : "10.0.2.12",
+          "DATABASE_SLAVE_PORT" : 3306,
+          "DATABASE_USER" : "pc",
+          "DATABASE_PASSWORD" : "pc",
+          "DATABASE_MASTER_IP" :"10.0.2.11",
+          "DATABASE_MASTER_PORT" :3306,
+          "SLAVE_USER_PASSWORD" : "s_password"
+        }
+      }
+    ]
+},
+  {
+    "name" : "backend",
+    "subnet" : "backend",
+    "private_ip" : "10.0.1.11",
+    "public_ip" : "temp_ip",
+    "services" : [
+      {
+        "name" : "backend_replication",
+        "env" : 
+        {
+          "BACKEND_PORT" : 8080,
+          "DATABASE_MASTER_IP" : "10.0.2.11",
+          "DATABASE_MASTER_PORT" : 3306,
+          "DATABASE_SLAVE_IP": "10.0.2.12",
+          "DATABASE_SLAVE_PORT": 3306,
+          "DATABASE_USER" : "pc",
+          "DATABASE_PASSWORD" : "pc"
+        }
+      }
+    ]
+  },
+  {
+        
+    "name" : "frontend",
+    "subnet" : "frontend",
+    "private_ip" : "10.0.0.11",
+    "public_ip" : "frontend_ip",
+    "services" : [
+    {
+      "name" : "frontend",
+      "env" : 
+      {
+          "PUBLIC_IP" : "placeholder",
+          "FRONTEND_PORT" : 80,
+          "BACKEND_IP" : "10.0.1.11",
+          "BACKEND_PORT" : 8080
+      }
+    }
+    ]
+  }
+
+  ]
+}

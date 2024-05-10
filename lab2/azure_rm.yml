@@ -1,0 +1,14 @@
+plugin: azure_rm
+include_vm_resource_groups:
+  - lab2
+auth_source: auto
+conditional_groups:
+  fe: "'fe' in tags.roles.split(',')"
+  be: "'be' in tags.roles.split(',')"
+  ber: "'ber' in tags.roles.split(',')"
+  lb: "'lb' in tags.roles.split(',')"
+  db: "'db' in tags.roles.split(',')"
+  dbm: "'dbm' in tags.roles.split(',')"
+  dbs: "'dbs' in tags.roles.split(',')"
+hostvar_expressions:
+  ansible_host: public_ip_address[0].ipv4_address

@@ -1,0 +1,24 @@
+- name: Register env variable
+  ansible.builtin.set_fact:
+    env: "{{item.env.dbs}}"
+  loop: "{{vms}}"
+  when: "private_ipv4_addresses[0] == item.private_ip"
+- name: Ensures database_slave dir exists
+  file: path=/database_slave/ state=directory
+- name: Copy Backend Dockerfile
+  ansible.builtin.copy:
+    src: "."
+    dest: /database_slave/
+- name: Build backend replication image
+  community.docker.docker_image:
+    name: petclinic-database-slave
+    source: build
+    build:
+      path: /database_slave/
+      args: "{{env}}"
+- name: Deploy backend container
+  community.docker.docker_container:
+    name: petclinic-database-slave
+    image: petclinic-database-slave
+    ports: "{{env.DATABASE_SLAVE_PORT}}:{{env.DATABASE_SLAVE_PORT}}"
+    network_mode: host

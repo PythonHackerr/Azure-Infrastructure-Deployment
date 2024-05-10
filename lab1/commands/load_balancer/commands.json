@@ -1,0 +1,38 @@
+{
+    "env": [
+        "LOAD_BALANCER_PORT",
+        "READ_BACKEND_IP",
+        "READ_BACKEND_PORT",
+        "WRITE_BACKEND_IP",
+        "WRITE_BACKEND_PORT"
+    ],
+    "commands": [
+        {
+            "message": "Running pre-configuration of VM",
+            "command": "sudo sed -i 's/#$nrconf{restart} = '\"'\"'i'\"'\"';/$nrconf{restart} = '\"'\"'a'\"'\"';/g' /etc/needrestart/needrestart.conf"
+        },
+        {
+            "message": "Updating packages",
+            "command": "sudo apt-get update -y && sudo apt-get upgrade -y"
+        },
+        {
+            "message": "Installing nginx",
+            "command": "sudo apt-get install nginx -y"
+        },
+        {
+            "message": "Configuring nginx",
+            "script": "configure_nginx.sh",
+            "params": [
+                "LOAD_BALANCER_PORT",
+                "READ_BACKEND_IP",
+                "READ_BACKEND_PORT",
+                "WRITE_BACKEND_IP",
+                "WRITE_BACKEND_PORT"
+            ]
+        },
+        {
+            "message": "Restarting nginx",
+            "command": "sudo nginx -s reload"
+        }
+    ]
+}

@@ -1,0 +1,40 @@
+{
+    "env": [
+        "DATABASE_PORT",
+        "DATABASE_USER",
+        "DATABASE_PASSWORD"
+    ],
+    "commands": [
+        {
+            "message": "Running pre-configuration of VM",
+            "command": "sudo sed -i 's/#$nrconf{restart} = '\"'\"'i'\"'\"';/$nrconf{restart} = '\"'\"'a'\"'\"';/g' /etc/needrestart/needrestart.conf"
+        },
+        {
+            "message": "Updating packages",
+            "command": "sudo apt-get update -y && sudo apt-get upgrade -y"
+        },
+        {
+            "message": "Installing MySQL server",
+            "command": "sudo apt install -y mysql-server wget"
+        },
+        {
+            "message": "Configuring MySQL",
+            "script": "configure_mysql.sh",
+            "params": [
+                "DATABASE_PORT"
+            ]
+        },
+        {
+            "message": "Initialize database",
+            "script": "initialize_db.sh",
+            "params": [
+                "DATABASE_USER",
+                "DATABASE_PASSWORD"
+            ]
+        },
+        {
+            "message": "Restarting MySQL server",
+            "command": "sudo service mysql restart"
+        }
+    ]
+}

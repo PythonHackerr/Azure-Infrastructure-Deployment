@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  database:
+    build: 
+      context: ../roles/database/files
+      args:
+        DATABASE_PORT: 3306
+        DATABASE_USER: pc
+        DATABASE_PASSWORD: pc
+  backend:
+    build: 
+      context: ../roles/backend/files
+      args:
+        BACKEND_PORT: 8080
+        DATABASE_IP: database
+        DATABASE_PORT: 3306
+        DATABASE_USER: pc
+        DATABASE_PASSWORD: pc
+    depends_on:
+      - database
+  frontend:
+    build:
+      context: ../roles/frontend/files
+      args:
+        PUBLIC_IP: localhost
+        FRONTEND_PORT: 8080
+        BACKEND_IP: backend
+        BACKEND_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend

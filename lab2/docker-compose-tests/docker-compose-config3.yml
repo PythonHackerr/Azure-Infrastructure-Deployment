@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  database_master:
+    build: 
+      context: ../roles/database_master/files
+      args:
+        DATABASE_MASTER_PORT: 3306
+        DATABASE_USER: pc
+        DATABASE_PASSWORD: pc
+        SLAVE_USER_PASSWORD: slave
+  database_slave:
+    build: 
+      context: ../roles/database_slave/files
+      args:
+        DATABASE_SLAVE_PORT: 3306
+        DATABASE_USER: pc
+        DATABASE_PASSWORD: pc
+        DATABASE_MASTER_IP: database_master
+        DATABASE_MASTER_PORT: 3306
+        SLAVE_USER_PASSWORD: slave
+    depends_on:
+      - database_master
+  backend:
+    build: 
+      context: ../roles/backend_replication/files
+      args:
+        BACKEND_PORT: 8080
+        DATABASE_MASTER_IP: database_master
+        DATABASE_MASTER_PORT: 3306
+        DATABASE_SLAVE_IP: database_slave
+        DATABASE_SLAVE_PORT: 3306
+        DATABASE_USER: pc
+        DATABASE_PASSWORD: pc
+    depends_on:
+      - database_slave
+  frontend:
+    build:
+      context: ../roles/frontend/files
+      args:
+        PUBLIC_IP: localhost
+        FRONTEND_PORT: 8080
+        BACKEND_IP: backend
+        BACKEND_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend

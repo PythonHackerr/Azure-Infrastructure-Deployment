@@ -1,0 +1,24 @@
+- name: Register env variable
+  ansible.builtin.set_fact:
+    env: "{{item.env.ber}}"
+  loop: "{{vms}}"
+  when: "private_ipv4_addresses[0] == item.private_ip"
+- name: Ensures backend_replication dir exists
+  file: path=/backend_replication/ state=directory
+- name: Copy Backend replication Dockerfile
+  ansible.builtin.copy:
+    src: "."
+    dest: /backend_replication/
+- name: Build backend replication image
+  community.docker.docker_image:
+    name: petclinic-backend-replication
+    source: build
+    build:
+      path: /backend_replication/
+      args: "{{env}}"
+- name: Deploy backend container
+  community.docker.docker_container:
+    name: petclinic-backend-replication
+    image: petclinic-backend-replication
+    ports: "{{env.BACKEND_PORT}}:{{env.BACKEND_PORT}}"
+    network_mode: host

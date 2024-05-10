@@ -1,0 +1,24 @@
+- name: Register env variable
+  ansible.builtin.set_fact:
+    env: "{{item.env.db}}"
+  loop: "{{vms}}"
+  when: "private_ipv4_addresses[0] == item.private_ip"
+- name: Ensures db dir exists
+  file: path=/db/ state=directory
+- name: Copy DB Dockerfile
+  copy:
+    src: "."
+    dest: /db/
+- name: Build DB image
+  community.docker.docker_image:
+    name: petclinic-database
+    source: build
+    build:
+      path: /db
+      args: "{{env}}" 
+- name: Run DB image
+  community.docker.docker_container:
+    name: petclinic-database
+    image: petclinic-database
+    ports: "{{env.DATABASE_PORT}}:{{env.DATABASE_PORT}}"
+    network_mode: host

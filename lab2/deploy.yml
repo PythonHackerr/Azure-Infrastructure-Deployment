@@ -1,0 +1,122 @@
+- hosts: localhost
+  tasks:
+    - name: Get facts for one Public IP
+      azure_rm_publicipaddress_info:
+        resource_group: "{{group_name}}"
+        name: "{{item.pub_ip}}"
+      register: temp_public_ip
+      loop: "{{vms}}"
+      when: "'fe' in item.vm.roles.split(',')"
+    - name: Set fe public ip
+      ansible.builtin.set_fact:
+        fe_public_ip: "{{temp_public_ip.results[0].publicipaddresses[0].ip_address}}"
+
+- hosts: all
+  become: yes
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        upgrade: yes
+        update_cache: yes
+        cache_valid_time: 86400
+      register: result
+      until: result is not failed
+      retries: 10
+      delay: 4
+
+    - name: Install aptitude
+      apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - virtualenv
+          - python3-setuptools
+        state: latest
+        update_cache: true
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu jammy stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+
+    - name: Addgroup docker
+      ansible.builtin.group:
+        name: docker
+        state: present
+
+    - name: Add {{ ansible_ssh_user }} to docker group
+      command: usermod -aG docker {{ ansible_ssh_user }}
+
+    - name: Reset ssh connection
+      meta: reset_connection
+      become: no
+
+    - name: Stop existing containers
+      shell: docker ps -q | xargs --no-run-if-empty docker stop
+        
+
+- hosts: db
+  become: yes
+  roles:
+  - database
+
+- hosts: be
+  become: yes
+  roles:
+  - backend
+
+- hosts: fe
+  become: yes
+  roles:
+  - frontend
+
+- hosts: ber
+  become: yes
+  roles:
+  - backend_replication
+
+- hosts: lb
+  become: yes
+  roles:
+  - load_balancer
+
+- hosts: dbm
+  become: yes
+  roles:
+  - database_master
+
+- hosts: dbs
+  become: yes
+  roles:
+  - database_slave
+
+- hosts: localhost
+  tasks:
+  - name: Register frontend port
+    loop: "{{vms}}"
+    when: "'fe' in item.vm.roles.split(',')"
+    ansible.builtin.set_fact:
+      fe_port: "{{item.env.fe.FRONTEND_PORT}}"
+  - name: Print Public IP
+    debug:
+      msg: "The app is available at: http://{{ fe_public_ip }}:{{fe_port}}"

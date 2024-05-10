@@ -1,0 +1,114 @@
+all:
+  vars:
+    fe_public_ip: placeholder
+    ansible_ssh_user: "azureuser" # USER
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    ssh_key_filename: "id_rsa_azure"
+    ansible_ssh_private_key_file: "~/.ssh/{{ssh_key_filename}}"
+    group_name: "lab2"
+    region: "switzerlandnorth"
+    network_name: "network"
+    prefix: "10.0.0.0/16"
+    subnets:
+      - name: "frontend"
+        prefix: "10.0.0.0/24"
+      - name: "rbackend"
+        prefix: "10.0.1.0/24"
+      - name: "wbackend"
+        prefix: "10.0.2.0/24"
+    nsgs:
+      - name: "fe_group"
+        rules:
+          - name: "ssh_rule"
+            protocol: Tcp
+            priority: 1001
+            destination_port_range: 22
+            direction: "Inbound"
+            access: "Allow"
+          - name: "http_rule"
+            protocol: Tcp
+            priority: 1011
+            destination_port_range: 80
+            direction: "Inbound"
+            access: "Allow"
+      - name: "rbe_group"
+        rules:
+          - name: "ssh_rule"
+            protocol: Tcp
+            priority: 1001
+            destination_port_range: 22
+            direction: "Inbound"
+            access: "Allow"
+      - name: "wbe_group"
+        rules:
+          - name: "ssh_rule"
+            protocol: Tcp
+            priority: 1001
+            destination_port_range: 22
+            direction: "Inbound"
+            access: "Allow"
+
+    vms:
+      - private_ip: "10.0.0.11"
+        nic_name: "feNIC"
+        subnet: "frontend"
+        pub_ip: "fe_ip"
+        nsg: "fe_group"
+        vm:
+          name: "fe"
+          roles: "fe,lb"
+        env:
+          fe:
+            PUBLIC_IP: "{{hostvars['localhost']['fe_public_ip']}}"
+            FRONTEND_PORT: 80
+            BACKEND_IP: "localhost"
+            BACKEND_PORT: 8080
+          lb:
+            LOAD_BALANCER_PORT: 8080
+            READ_BACKEND_IP: "10.0.1.11"
+            READ_BACKEND_PORT: 8080
+            WRITE_BACKEND_IP: "10.0.2.11"
+            WRITE_BACKEND_PORT: 8080
+      - private_ip: "10.0.1.11"
+        nic_name: "rbeNIC"
+        subnet: "rbackend"
+        pub_ip: "rbe_ip"
+        nsg: "rbe_group"
+        vm:
+          name: "rbe"
+          roles: "be,dbs"
+        env:
+          be:
+            BACKEND_PORT: 8080
+            DATABASE_IP: "localhost"
+            DATABASE_PORT: 3306
+            DATABASE_USER: "pc"
+            DATABASE_PASSWORD: "pc"
+          dbs:
+            DATABASE_SLAVE_PORT: 3306
+            DATABASE_USER: "pc"
+            DATABASE_PASSWORD: "pc"
+            DATABASE_MASTER_IP: "10.0.2.11"
+            DATABASE_MASTER_PORT: 3306
+            SLAVE_USER_PASSWORD: "s_password"
+      - private_ip: "10.0.2.11"
+        nic_name: "wbeNIC"
+        subnet: "wbackend"
+        pub_ip: "wbe_ip"
+        nsg: "wbe_group"
+        vm:
+          name: "wbe"
+          roles: "be,dbm"
+        env:
+          be:
+            BACKEND_PORT: 8080
+            DATABASE_IP: "localhost"
+            DATABASE_PORT: 3306
+            DATABASE_USER: "pc"
+            DATABASE_PASSWORD: "pc"
+          dbm:
+            DATABASE_MASTER_PORT: 3306
+            DATABASE_USER: "pc"
+            DATABASE_PASSWORD: "pc"
+            SLAVE_USER_PASSWORD: "s_password"
+          
